@@ -1,10 +1,28 @@
 import { ErrorHandler } from "../../infra/errors/errorHandler.infra";
 import { InternalServerError, NotFoundError } from "../../infra/errors/errorType.infra";
-import Enrollment from "../entity/enrollment.entity";
-import type { HTTPGetEnrollmentsByCourseIDResponse } from "../vo/enrollment";
-import type { IEnrollmentsRepository } from "./interface/IEnrollmentsRepository";
+import type RedisCache from "../../infra/cache/redis.infra";
+import type { IEnrollmentsRepository } from "./IEnrollmentsRepository";
+import Enrollment from "./enrollment.entity";
 
-class HTTPEnrollmentsRepository implements IEnrollmentsRepository {
+type HTTPGetEnrollmentsByCourseIDResponse = {
+  enrollments: {
+    user_id: number;
+    enrolled_at: string;
+    completed_at: null | string;
+    percent_complete: number;
+    expires_at: null | string;
+  }[];
+  meta: {
+    page: number;
+    total: number;
+    number_of_pages: number;
+    from: number;
+    to: number;
+    per_page: number;
+  };
+};
+
+export class HTTPEnrollmentsRepository implements IEnrollmentsRepository {
   async getEnrollmentsByCourseID(courseID: number): Promise<Enrollment[]> {
     try {
       let result: Enrollment[] = [];
@@ -31,7 +49,7 @@ class HTTPEnrollmentsRepository implements IEnrollmentsRepository {
         }
 
         const data: HTTPGetEnrollmentsByCourseIDResponse = await response.json();
-        if (data.enrollments.length) {
+        if (!data.enrollments.length) {
           throw new NotFoundError(`Enrollments not found`);
         }
 
@@ -49,37 +67,47 @@ class HTTPEnrollmentsRepository implements IEnrollmentsRepository {
   }
 }
 
-class RedisEnrollmentsRepository implements IEnrollmentsRepository {
+export class RedisEnrollmentsRepository implements IEnrollmentsRepository {
+  private redisCache: RedisCache;
+  constructor(redisCache: RedisCache) {
+    this.redisCache = redisCache;
+  }
   async getEnrollmentsByCourseID(courseID: number): Promise<Enrollment[]> {
-    try {
-      let result: Enrollment[] = [];
-      // ... implementation
-      return result;
-    } catch (error) {
-      throw ErrorHandler.getError(error as Error);
+    await this.redisCache.connect();
+    const cachedData = await this.redisCache.get(`enrollments-${courseID}`);
+    if (!cachedData) {
+      return [];
     }
+    const parsedData: Enrollment[] = JSON.parse(cachedData);
+    return parsedData;
+  }
+
+  async saveEnrollmentsByCourseID(courseID: number, Enrollment) {
+    await this.redisCache.connect();
+    await this.redisCache.set("enrollments", { [`enrollments-${courseID}`]: Enrollment });
+    return;
   }
 }
 
-class EnrollmentsRepository implements IEnrollmentsRepository {
+export class EnrollmentsRepository implements IEnrollmentsRepository {
   constructor(private httpEnrollmentsRepository: HTTPEnrollmentsRepository, private redisEnrollmentsRepository: RedisEnrollmentsRepository) {}
 
   async getEnrollmentsByCourseID(courseID: number): Promise<Enrollment[]> {
     try {
-      const result: Enrollment[] = await this.redisEnrollmentsRepository.getEnrollmentsByCourseID(courseID);
-      if (!result.length) {
-        result.push(...(await this.httpEnrollmentsRepository.getEnrollmentsByCourseID(courseID)));
+      const redisResponse: Enrollment[] = await this.redisEnrollmentsRepository.getEnrollmentsByCourseID(courseID).catch((e) => {
+        console.error(e);
+        return [];
+      });
+      if (redisResponse.length) {
+        return redisResponse;
       }
-      return result;
+      const httpRepoResponse = await this.httpEnrollmentsRepository.getEnrollmentsByCourseID(courseID);
+      await this.redisEnrollmentsRepository.saveEnrollmentsByCourseID(courseID, httpRepoResponse).catch((e) => {
+        console.error(e);
+      });
+      return httpRepoResponse;
     } catch (error) {
       throw ErrorHandler.getError(error as Error);
     }
   }
 }
-
-const httpEnrollmentsRepository = new HTTPEnrollmentsRepository();
-const redisEnrollmentsRepository = new RedisEnrollmentsRepository();
-const enrollmentsRepository = new EnrollmentsRepository(httpEnrollmentsRepository, redisEnrollmentsRepository);
-
-export type { EnrollmentsRepository };
-export default enrollmentsRepository;

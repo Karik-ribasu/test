@@ -1,17 +1,14 @@
 import { ErrorHandler } from "../../infra/errors/errorHandler.infra";
-// repositories
-import coursesRepository, { type CoursesRepository } from "../../domain/repository/courses.repository";
-import enrollmentsRepository, { type EnrollmentsRepository } from "../../domain/repository/enrollments.repository";
-import userRepository, { type UsersRepository } from "../../domain/repository/users.repository";
-//entities
-import Course from "../../domain/entity/course.entity";
-import User from "../../domain/entity/user.entity";
-import Enrollment from "../../domain/entity/enrollment.entity";
-// dto
-import type { CourseWithEnrollment } from "../dto/courseWithEnrollments.dto";
+import { CourseWithEnrollment } from "../dto/courseWithEnrollments.dto";
+import type { ICoursesRepository } from "../../domain/course/ICoursesRepository";
+import type { IUsersRepository } from "../../domain/user/IUsersRepository";
+import type { IEnrollmentsRepository } from "../../domain/enrollment/IEnrollmentsRepository";
+import type Course from "../../domain/course/course.entity";
+import type User from "../../domain/user/user.entity";
+import type Enrollment from "../../domain/enrollment/enrollment.entity";
 
-class GetPublishedCoursesWithEnrollments {
-  constructor(private coursesRepository: CoursesRepository, private usersRepository: UsersRepository, private enrollmentsRepository: EnrollmentsRepository) {}
+export class GetPublishedCoursesService {
+  constructor(private coursesRepository: ICoursesRepository, private usersRepository: IUsersRepository, private enrollmentsRepository: IEnrollmentsRepository) {}
 
   async execute() {
     try {
@@ -22,6 +19,7 @@ class GetPublishedCoursesWithEnrollments {
 
       // fetch user data and create a map to optimize performance
       const users: User[] = await this.usersRepository.getUsers();
+      console.log(typeof users, '\n', users)
       const userDataByID: { [id: number]: { name: string; email: string } } = {};
       users.map((user) => {
         const { id, ...userData } = user;
@@ -29,7 +27,7 @@ class GetPublishedCoursesWithEnrollments {
       });
 
       // loop through courses fetching enrollments data
-      for (const course of courses) {
+      for (const course of publishedCourses) {
         const enrollments: Enrollment[] = await this.enrollmentsRepository.getEnrollmentsByCourseID(course.id);
 
         const parsedEnrollments = enrollments.map((enrollment) => {
@@ -53,8 +51,3 @@ class GetPublishedCoursesWithEnrollments {
     }
   }
 }
-
-const getPublishedCoursesWithEnrollments = new GetPublishedCoursesWithEnrollments(coursesRepository, userRepository, enrollmentsRepository);
-
-export type { GetPublishedCoursesWithEnrollments };
-export default getPublishedCoursesWithEnrollments;

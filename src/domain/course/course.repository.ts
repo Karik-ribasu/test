@@ -1,12 +1,29 @@
-import type { ICoursesRepository } from "./interface/ICoursesRepository";
-import type { HTTPGetCoursesResponse } from "../vo/course";
-import Course from "../entity/course.entity";
+import type { ICoursesRepository } from "./ICoursesRepository";
+import Course from "./course.entity";
 import { InternalServerError, NotFoundError } from "../../infra/errors/errorType.infra";
 import { ErrorHandler } from "../../infra/errors/errorHandler.infra";
-import redisClient from "../../infra/cache/redis.infra";
-import type { RedisClientType } from "redis";
+import type RedisCache from "../../infra/cache/redis.infra";
 
-class HTTPCoursesRepository implements ICoursesRepository {
+export type HTTPGetCoursesResponse = {
+  courses: {
+    id: number;
+    description: null | string;
+    name: string;
+    heading: string;
+    is_published: boolean;
+    image_url: string;
+  }[];
+  meta: {
+    page: number;
+    total: number;
+    number_of_pages: number;
+    from: number;
+    to: number;
+    per_page: number;
+  };
+};
+
+export class HTTPCoursesRepository implements ICoursesRepository {
   async getCourses(): Promise<Course[]> {
     try {
       let result: Course[] = [];
@@ -50,55 +67,48 @@ class HTTPCoursesRepository implements ICoursesRepository {
   }
 }
 
-class RedisCoursesRepository implements ICoursesRepository {
-  // readonly redisClient: RedisClientType;
-  // constructor(redisClient: RedisClientType) {
-  //   this.redisClient = redisClient;
-  // }
+export class RedisCoursesRepository implements ICoursesRepository {
+  private redisCache: RedisCache;
+  constructor(redisCache: RedisCache) {
+    this.redisCache = redisCache;
+  }
   async getCourses(): Promise<Course[]> {
-    //   try {
-    //     const cachedData = await this.redisClient.get("courses");
-    //     if (!cachedData) {
-    //       return [];
-    //     }
-    //     const parsedData: Course[] = JSON.parse(cachedData);
-    //     return parsedData;
-    //   } catch (error) {
-    //     throw ErrorHandler.getError(error as Error);
-    //   }
-    return [];
+    await this.redisCache.connect();
+    const cachedData = await this.redisCache.get("courses");
+    if (!cachedData) {
+      return [];
+    }
+    const parsedData: Course[] = JSON.parse(cachedData).data.courses.map(({ id, description, name, heading, is_published, image_url }) => new Course(id, description, name, heading, is_published, image_url));
+    return parsedData;
   }
 
-  async setCourses(courses: Course[]) {
-    // await this.redisClient.set("courses", JSON.stringify(courses));
-    return
+  async saveCourses(courses: Course[]) {
+    await this.redisCache.connect();
+    const coursesData = courses.map((course) => ({ id: course.id, description: course.description, name: course.name, heading: course.heading, is_published: course.is_published, image_url: course.image_url }));
+    await this.redisCache.set("courses", coursesData);
+    return;
   }
 }
 
-class CoursesRepository implements ICoursesRepository {
+export class CoursesRepository implements ICoursesRepository {
   constructor(private httpCoursesRepository: HTTPCoursesRepository, private redisCoursesRepository: RedisCoursesRepository) {}
 
   async getCourses(): Promise<Course[]> {
     try {
-      const redisRepoResponse = await this.redisCoursesRepository.getCourses().catch((e) => {
+      const redisResponse: Course[] = await this.redisCoursesRepository.getCourses().catch((e) => {
         console.error(e);
-        return [] as Course[];
+        return [];
       });
-      if (!redisRepoResponse.length) {
-        const httpRepoResponse = await this.httpCoursesRepository.getCourses();
-        redisCoursesRepository.setCourses(httpRepoResponse);
-        return httpRepoResponse;
+      if (redisResponse.length) {
+        return redisResponse;
       }
-      return redisRepoResponse;
+      const httpRepoResponse = await this.httpCoursesRepository.getCourses();
+      await this.redisCoursesRepository.saveCourses(httpRepoResponse).catch((e) => {
+        console.error(e);
+      });
+      return httpRepoResponse;
     } catch (error) {
       throw ErrorHandler.getError(error as Error);
     }
   }
 }
-
-const httpCoursesRepository = new HTTPCoursesRepository();
-const redisCoursesRepository = new RedisCoursesRepository();
-const coursesRepository = new CoursesRepository(httpCoursesRepository, redisCoursesRepository);
-
-export type { CoursesRepository };
-export default coursesRepository;

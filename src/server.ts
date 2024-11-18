@@ -10,6 +10,6 @@ const logger = new Logger()
 app.use(logger.middleware)
 app.use(express.json());
 
-app.use('/courses/', coursesRouter)
+app.use('/', coursesRouter)
 
 app.listen(8080, () => console.log("server running on port 8080"));

@@ -1,10 +1,26 @@
-import type { IUsersRepository } from "./interface/IUsersRepository";
-import type { HTTPGetUsersResponse } from "../vo/user";
-import User from "../entity/user.entity";
+import type { IUsersRepository } from "./IUsersRepository";
 import { ErrorHandler } from "../../infra/errors/errorHandler.infra";
 import { InternalServerError, NotFoundError } from "../../infra/errors/errorType.infra";
+import type RedisCache from "../../infra/cache/redis.infra";
+import User from "./user.entity";
 
-class HTTPUsersRepository implements IUsersRepository {
+export type HTTPGetUsersResponse = {
+  users: {
+    email: string;
+    name: string;
+    id: number;
+  }[];
+  meta: {
+    page: number;
+    total: number;
+    number_of_pages: number;
+    from: number;
+    to: number;
+    per_page: number;
+  };
+};
+
+export class HTTPUsersRepository implements IUsersRepository {
   async getUsers(): Promise<User[]> {
     try {
       let result: User[] = [];
@@ -31,7 +47,7 @@ class HTTPUsersRepository implements IUsersRepository {
         }
 
         const data: HTTPGetUsersResponse = await response.json();
-        if (data.users.length) {
+        if (!data.users.length) {
           throw new NotFoundError(`Users not found`);
         }
 
@@ -49,37 +65,51 @@ class HTTPUsersRepository implements IUsersRepository {
   }
 }
 
-class RedisUsersRepository implements IUsersRepository {
+export class RedisUsersRepository implements IUsersRepository {
+  private redisCache: RedisCache;
+  constructor(redisCache: RedisCache) {
+    this.redisCache = redisCache;
+  }
   async getUsers(): Promise<User[]> {
     try {
-      let result: User[] = [];
-      // ... implementation
-      return result;
+      await this.redisCache.connect();
+      const cachedData = await this.redisCache.get("users");
+      if (!cachedData) {
+        return [];
+      }
+      const parsedData: User[] = JSON.parse(cachedData);
+      return parsedData;
     } catch (error) {
       throw ErrorHandler.getError(error as Error);
     }
   }
+
+  async saveUsers(users: User[]) {
+    await this.redisCache.connect();
+    await this.redisCache.set("users", users);
+    return;
+  }
 }
 
-class UsersRepository implements IUsersRepository {
+export class UsersRepository implements IUsersRepository {
   constructor(private httpUsersRepository: HTTPUsersRepository, private redisUsersRepository: RedisUsersRepository) {}
 
   async getUsers(): Promise<User[]> {
     try {
-      const result: User[] = await this.redisUsersRepository.getUsers();
-      if (!result.length) {
-        result.push(...(await this.httpUsersRepository.getUsers()));
+      const redisResponse: User[] = await this.redisUsersRepository.getUsers().catch((e) => {
+        console.error(e);
+        return [];
+      });
+      if (redisResponse.length) {
+        return redisResponse;
       }
-      return result;
+      const httpRepoResponse = await this.httpUsersRepository.getUsers();
+      await this.redisUsersRepository.saveUsers(httpRepoResponse).catch((e) => {
+        console.error(e);
+      });
+      return httpRepoResponse;
     } catch (error) {
       throw ErrorHandler.getError(error as Error);
     }
   }
 }
-
-const httpUsersRepository = new HTTPUsersRepository();
-const redisUsersRepository = new RedisUsersRepository();
-const userRepository = new UsersRepository(httpUsersRepository, redisUsersRepository);
-
-export type { UsersRepository };
-export default userRepository;

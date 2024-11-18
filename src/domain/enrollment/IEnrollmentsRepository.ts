@@ -1,4 +1,4 @@
-import type { Enrollment } from "../../entity/enrollment.entity";
+import type Enrollment from "./enrollment.entity";
 
 export interface IEnrollmentsRepository {
   getEnrollmentsByCourseID(courseID: number): Promise<Enrollment[]>;
