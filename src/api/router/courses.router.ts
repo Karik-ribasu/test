@@ -1,12 +1,21 @@
 import { Router } from "express";
 import RedisCache from "../../infra/cache/redis.infra";
-import { HTTPUsersRepository, RedisUsersRepository, UsersRepository } from "../../domain/user/user.repository";
-import { GetPublishedCoursesService } from "../../application/services/getPublishedCourses.service";
+import { GetPublishedCoursesService } from "../../application/services/getPublishedCourses.service/getPublishedCourses.service";
 import { GetPublishedCoursesController } from "../controller/courses/getPublishedCourses.controller";
-import { CoursesRepository, HTTPCoursesRepository, RedisCoursesRepository } from "../../domain/course/course.repository";
-import { EnrollmentsRepository, HTTPEnrollmentsRepository, RedisEnrollmentsRepository } from "../../domain/enrollment/enrollment.repository";
+import { HTTPCoursesRepository } from "../../domain/course/repository/httpCourses.repository";
+import { RedisCoursesRepository } from "../../domain/course/repository/redisCourses.repository";
+import { CoursesRepository } from "../../domain/course/repository/courses.repository";
+import { HTTPEnrollmentsRepository } from "../../domain/enrollment/repository/httpEnrollments.repository";
+import { RedisEnrollmentsRepository } from "../../domain/enrollment/repository/redisEnrollments.repository";
+import { EnrollmentsRepository } from "../../domain/enrollment/repository/enrollments.repository";
+import { HTTPUsersRepository } from "../../domain/user/repository/httpUsers.repository";
+import { RedisUsersRepository } from "../../domain/user/repository/redisUsers.repository";
+import { UsersRepository } from "../../domain/user/repository/users.repository";
 
+// Redis cache instance
 const redisCache = RedisCache.getInstance();
+
+// Repositories
 const httpCoursesRepository = new HTTPCoursesRepository();
 const redisCoursesRepository = new RedisCoursesRepository(redisCache);
 const coursesRepository = new CoursesRepository(httpCoursesRepository, redisCoursesRepository);
@@ -19,10 +28,13 @@ const httpUsersRepository = new HTTPUsersRepository();
 const redisUsersRepository = new RedisUsersRepository(redisCache);
 const usersRepository = new UsersRepository(httpUsersRepository, redisUsersRepository);
 
+// Services
 const getPublishedCoursesService = new GetPublishedCoursesService(coursesRepository, usersRepository, enrollmentsRepository);
 
+// Controllers
 const getPublishedCoursesController = new GetPublishedCoursesController(getPublishedCoursesService);
 
+// Router
 const coursesRouter = Router();
 coursesRouter.get("/v1/courses", getPublishedCoursesController.execute);
 

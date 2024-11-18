@@ -1,7 +1,7 @@
 import winston from 'winston';
 import { NextFunction, Request, Response } from 'express';
 
-export class Logger {
+class Logger {
   private logger: winston.Logger;
 
   constructor() {
@@ -20,7 +20,6 @@ export class Logger {
     });
   }
 
-  // Middleware function
   public middleware = (req: Request, res: Response, next: NextFunction): void => {
     this.logger.info(`[${req.method}] ${req.originalUrl}`);
 
@@ -32,4 +31,15 @@ export class Logger {
 
     next();
   };
+
+  public log(data: any){
+    this.logger.log(data)
+  }
+
+  public error(data: any){
+    this.logger.error(data)
+  }
 }
+
+const logger = new Logger()
+export default logger

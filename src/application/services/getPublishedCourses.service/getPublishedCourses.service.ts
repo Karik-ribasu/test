@@ -1,11 +1,11 @@
-import { ErrorHandler } from "../../infra/errors/errorHandler.infra";
-import { CourseWithEnrollment } from "../dto/courseWithEnrollments.dto";
-import type { ICoursesRepository } from "../../domain/course/ICoursesRepository";
-import type { IUsersRepository } from "../../domain/user/IUsersRepository";
-import type { IEnrollmentsRepository } from "../../domain/enrollment/IEnrollmentsRepository";
-import type Course from "../../domain/course/course.entity";
-import type User from "../../domain/user/user.entity";
-import type Enrollment from "../../domain/enrollment/enrollment.entity";
+import { ErrorHandler } from "../../../infra/errors/errorHandler.infra";
+import { CourseWithEnrollment } from "./getPublishedCourses.dto";
+import type { ICoursesRepository } from "../../../domain/course/ICoursesRepository";
+import type { IUsersRepository } from "../../../domain/user/IUsersRepository";
+import type { IEnrollmentsRepository } from "../../../domain/enrollment/IEnrollmentsRepository";
+import type Course from "../../../domain/course/course.entity";
+import type User from "../../../domain/user/user.entity";
+import type Enrollment from "../../../domain/enrollment/enrollment.entity";
 
 export class GetPublishedCoursesService {
   constructor(private coursesRepository: ICoursesRepository, private usersRepository: IUsersRepository, private enrollmentsRepository: IEnrollmentsRepository) {}
@@ -19,7 +19,6 @@ export class GetPublishedCoursesService {
 
       // fetch user data and create a map to optimize performance
       const users: User[] = await this.usersRepository.getUsers();
-      console.log(typeof users, '\n', users)
       const userDataByID: { [id: number]: { name: string; email: string } } = {};
       users.map((user) => {
         const { id, ...userData } = user;

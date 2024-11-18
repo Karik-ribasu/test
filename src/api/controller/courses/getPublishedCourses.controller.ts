@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import { ErrorHandler } from "../../../infra/errors/errorHandler.infra";
-import type { GetPublishedCoursesService } from "../../../application/services/getPublishedCourses.service";
+import type { GetPublishedCoursesService } from "../../../application/services/getPublishedCourses.service/getPublishedCourses.service";
 
 export class GetPublishedCoursesController {
   constructor(private getPublishedCoursesService: GetPublishedCoursesService) {
