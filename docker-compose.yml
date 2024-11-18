@@ -1,15 +1,15 @@
-version: '3.8'
+version: "3.8"
 
 services:
   app:
     build: .
     container_name: techable-app
     ports:
-      - "3000:3000"
+      - "3000:8080"
     environment:
-      - NODE_ENV=development
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
+      # TODO: environment variables and secrets shouldn't be here!!
+      - TEACHABLE_API_BASE_URL=https://developers.teachable.com
+      - TEACHABLE_API_KEY=7JbSA3ep6XOMV3t8t7QXuXq9HS79Dwnr
     volumes:
       - .:/app
     depends_on:

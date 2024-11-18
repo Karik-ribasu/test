@@ -5,13 +5,7 @@ class RedisCache {
   private readonly client: RedisClientType;
 
   private constructor() {
-    this.client = createClient({
-      password: "fumBwVwwT7ZLfEQJLDBKq3Bk7oZKyhPi",
-      socket: {
-        host: "redis-17576.c308.sa-east-1-1.ec2.redns.redis-cloud.com",
-        port: 17576,
-      },
-    });
+    this.client = createClient();
   }
 
   public static getInstance(): RedisCache {
