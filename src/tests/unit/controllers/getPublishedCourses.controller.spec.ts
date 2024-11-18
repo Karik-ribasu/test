@@ -1,4 +1,5 @@
 import { GetPublishedCoursesController } from "../../../api/controller/courses/getPublishedCourses.controller";
+import type { CourseWithEnrollment } from "../../../application/services/getPublishedCourses.service/getPublishedCourses.dto";
 import { GetPublishedCoursesService } from "../../../application/services/getPublishedCourses.service/getPublishedCourses.service";
 import { ErrorHandler } from "../../../infra/errors/errorHandler.infra";
 
@@ -67,7 +68,7 @@ describe("GetPublishedCoursesController", () => {
   });
 
   test("should handle empty courses data gracefully", async () => {
-    const emptyCourses = [];
+    const emptyCourses: CourseWithEnrollment[] = [];
 
     mockService.execute.mockResolvedValueOnce(emptyCourses);
 

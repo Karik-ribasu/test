@@ -6,7 +6,7 @@ export class GetPublishedCoursesController {
   constructor(private getPublishedCoursesService: GetPublishedCoursesService) {
     this.execute = this.execute.bind(this);
   }
-  
+
   async execute(req: Request, res: Response): Promise<void> {
     try {
       const courses = await this.getPublishedCoursesService.execute();
