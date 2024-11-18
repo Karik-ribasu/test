@@ -12,7 +12,7 @@ import { HTTPUsersRepository } from "../../domain/user/repository/httpUsers.repo
 import { RedisUsersRepository } from "../../domain/user/repository/redisUsers.repository";
 import { UsersRepository } from "../../domain/user/repository/users.repository";
 
-
+// TODO: implement dependency injection containers
 const redisCache = RedisCache.getInstance();
 
 const httpCoursesRepository = new HTTPCoursesRepository();

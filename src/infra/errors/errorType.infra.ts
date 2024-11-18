@@ -1,3 +1,4 @@
+// TODO: Implement eficient error handler tool.
 export class NotFoundError extends Error {
   public statusCode: number;
 
