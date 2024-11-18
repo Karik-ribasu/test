@@ -22,7 +22,6 @@ export class ErrorHandler {
         message: error.message,
       });
     } else {
-      // For unexpected errors, treat them as InternalServerError
       const wrappedError = new InternalServerError(error.message);
       res.status(500).json({
         success: false,

@@ -1,3 +1,4 @@
+import config from "../../../infra/config/config.infra";
 import { ErrorHandler } from "../../../infra/errors/errorHandler.infra";
 import { InternalServerError, NotFoundError } from "../../../infra/errors/errorType.infra";
 import type { IEnrollmentsRepository } from "../IEnrollmentsRepository";
@@ -50,13 +51,13 @@ export class HTTPEnrollmentsRepository implements IEnrollmentsRepository {
   }
 
   private async fetchEnrollmentsPage(courseID: number, page: number): Promise<HTTPGetEnrollmentsByCourseIDResponse> {
-    const url = `${process.env.TEACHABLE_API_BASE_URL}/v1/courses/${courseID}/enrollments?page=${page}`;
+    const url = `${config.TEACHABLE_API.BASE_URL}/v1/courses/${courseID}/enrollments?page=${page}`;
     const response = await fetch(url, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
-        apiKey: process.env.TEACHABLE_API_KEY as string,
+        apiKey: config.TEACHABLE_API.KEY as string,
       },
     });
 

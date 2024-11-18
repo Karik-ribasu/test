@@ -15,7 +15,6 @@ describe("UsersRepository", () => {
   let mockRedisRepository: jest.Mocked<RedisUsersRepository>;
 
   beforeEach(() => {
-    // Mock dependencies
     mockHttpRepository = {
       getUsers: jest.fn(),
       fetchAllUsers: jest.fn(),
@@ -48,7 +47,7 @@ describe("UsersRepository", () => {
     expect(users[0]).toBeInstanceOf(User);
     expect(users[0].email).toBe("user1@example.com");
     expect(mockRedisRepository.getUsers).toHaveBeenCalledTimes(1);
-    expect(mockHttpRepository.getUsers).not.toHaveBeenCalled(); // HTTP call should not be made
+    expect(mockHttpRepository.getUsers).not.toHaveBeenCalled();
   });
 
   test("should fetch users from HTTP if no cached users are found", async () => {
@@ -63,7 +62,7 @@ describe("UsersRepository", () => {
     expect(users[0].email).toBe("user1@example.com");
     expect(mockRedisRepository.getUsers).toHaveBeenCalledTimes(1);
     expect(mockHttpRepository.getUsers).toHaveBeenCalledTimes(1);
-    expect(mockRedisRepository.saveUsers).toHaveBeenCalledTimes(1); // Ensure caching was attempted
+    expect(mockRedisRepository.saveUsers).toHaveBeenCalledTimes(1);
   });
 
   test("should throw NotFoundError if API returns 404", async () => {

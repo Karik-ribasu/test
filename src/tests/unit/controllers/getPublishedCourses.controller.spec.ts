@@ -3,7 +3,6 @@ import type { CourseWithEnrollment } from "../../../application/services/getPubl
 import { GetPublishedCoursesService } from "../../../application/services/getPublishedCourses.service/getPublishedCourses.service";
 import { ErrorHandler } from "../../../infra/errors/errorHandler.infra";
 
-// Mock dependencies
 jest.mock("../../../application/services/getPublishedCourses.service/getPublishedCourses.service");
 jest.mock("../../../infra/errors/errorHandler.infra");
 
@@ -18,9 +17,9 @@ describe("GetPublishedCoursesController", () => {
       execute: jest.fn(),
     } as unknown as jest.Mocked<GetPublishedCoursesService>;
 
-    mockRequest = {}; // Simulating a basic Request object
+    mockRequest = {};
 
-    // Mock response object
+  
     mockResponse = {
       status: jest.fn().mockReturnThis(),
       json: jest.fn().mockReturnThis(),
@@ -64,7 +63,7 @@ describe("GetPublishedCoursesController", () => {
     await controller.execute(mockRequest, mockResponse);
 
     expect(ErrorHandler.handleResponse).toHaveBeenCalledWith(mockResponse, error);
-    expect(mockResponse.status).not.toHaveBeenCalledWith(200); // No success status called
+    expect(mockResponse.status).not.toHaveBeenCalledWith(200);
   });
 
   test("should handle empty courses data gracefully", async () => {

@@ -13,11 +13,9 @@ export class GetPublishedCoursesService {
   async execute() {
     try {
       let result: CourseWithEnrollment[] = [];
-      // fetch courses data
       const courses: Course[] = await this.coursesRepository.getCourses();
       const publishedCourses = courses.filter((course) => course.isPublished());
 
-      // fetch user data and create a map to optimize performance
       const users: User[] = await this.usersRepository.getUsers();
       const userDataByID: { [id: number]: { name: string; email: string } } = {};
       users.map((user) => {
@@ -25,7 +23,6 @@ export class GetPublishedCoursesService {
         userDataByID[id] = userData;
       });
 
-      // loop through courses fetching enrollments data
       for (const course of publishedCourses) {
         const enrollments: Enrollment[] = await this.enrollmentsRepository.getEnrollmentsByCourseID(course.id);
 

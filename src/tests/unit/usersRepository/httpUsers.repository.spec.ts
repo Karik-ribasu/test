@@ -17,7 +17,6 @@ describe("HTTPUsersRepository", () => {
   });
 
   test("should fetch all users successfully", async () => {
-    // Mock responses for pagination
     const mockResponsePage1 = {
       users: [
         { id: 1, email: "user1@example.com", name: "User One" },
@@ -34,7 +33,6 @@ describe("HTTPUsersRepository", () => {
       meta: { number_of_pages: 2, page: 2, total: 4, per_page: 2, from: 3, to: 4 },
     };
 
-    // Mock fetch to return responses
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: jest.fn().mockResolvedValue(mockResponsePage1),

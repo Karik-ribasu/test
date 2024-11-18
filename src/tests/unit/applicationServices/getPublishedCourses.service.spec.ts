@@ -7,7 +7,6 @@ import Course from "../../../domain/course/course.entity";
 import User from "../../../domain/user/user.entity";
 import Enrollment from "../../../domain/enrollment/enrollment.entity";
 
-// Mock dependencies
 jest.mock("../../../infra/errors/errorHandler.infra");
 
 describe("GetPublishedCoursesService", () => {

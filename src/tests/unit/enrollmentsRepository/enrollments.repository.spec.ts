@@ -1,103 +1,104 @@
-import Course from "../../../domain/course/course.entity";
-import { CoursesRepository } from "../../../domain/course/repository/courses.repository";
-import type { HTTPCoursesRepository } from "../../../domain/course/repository/httpCourses.repository";
-import type { RedisCoursesRepository } from "../../../domain/course/repository/redisCourses.repository";
-import { InternalServerError } from "../../../infra/errors/errorType.infra";
+import Enrollment from "../../../domain/enrollment/enrollment.entity";
+import { EnrollmentsRepository } from "../../../domain/enrollment/repository/enrollments.repository";
+import type { HTTPEnrollmentsRepository } from "../../../domain/enrollment/repository/httpEnrollments.repository";
+import type { RedisEnrollmentsRepository } from "../../../domain/enrollment/repository/redisEnrollments.repository";
+import { ErrorHandler } from "../../../infra/errors/errorHandler.infra";
+import { InternalServerError, NotFoundError } from "../../../infra/errors/errorType.infra";
 import logger from "../../../infra/logs/logger.infra";
 
 jest.mock("../../../infra/logs/logger.infra");
 
-describe("CoursesRepository", () => {
-  let repository: CoursesRepository;
-  let mockHttpRepository: jest.Mocked<HTTPCoursesRepository>;
-  let mockRedisRepository: jest.Mocked<RedisCoursesRepository>;
+describe("EnrollmentsRepository", () => {
+  let repository: EnrollmentsRepository;
+  let mockHttpRepository: jest.Mocked<HTTPEnrollmentsRepository>;
+  let mockRedisRepository: jest.Mocked<RedisEnrollmentsRepository>;
 
   beforeEach(() => {
-    // Mock dependencies
     mockHttpRepository = {
-      getCourses: jest.fn(),
-      fetchAllUsers: jest.fn(),
-      fetchUserPage: jest.fn(),
-      handleResponseError: jest.fn(),
-      mapToUserEntities: jest.fn(),
-    } as unknown as jest.Mocked<HTTPCoursesRepository>;
+      getEnrollmentsByCourseID: jest.fn(),
+    } as unknown as jest.Mocked<HTTPEnrollmentsRepository>;
 
     mockRedisRepository = {
-      getCourses: jest.fn(),
-      saveCourses: jest.fn(),
-      ensureConnection: jest.fn(),
-    } as unknown as jest.Mocked<RedisCoursesRepository>;
+      getEnrollmentsByCourseID: jest.fn(),
+      saveEnrollmentsByCourseID: jest.fn(),
+    } as unknown as jest.Mocked<RedisEnrollmentsRepository>;
 
-    repository = new CoursesRepository(mockHttpRepository, mockRedisRepository);
+    repository = new EnrollmentsRepository(mockHttpRepository, mockRedisRepository);
   });
 
   afterEach(() => {
     jest.clearAllMocks();
   });
 
-  test("should return cached courses if available", async () => {
-    const cachedCourses = [new Course(1, null, "Course 1", "Look", true, "https://cdn.filestackcontent.com/HfhcrIRZKEyvND8blEXA"), new Course(2, null, "Course 2", "To", false, "https://cdn.filestackcontent.com/HfhcrIRZKEyvND8blEXA")];
+  test("should return cached enrollments if available", async () => {
+    const cachedEnrollments = [new Enrollment(1, "2024-01-01", null, 50, "2024-12-31"), new Enrollment( 2,  "2024-01-01",  null,  30,  "2024-12-31")];
+    mockRedisRepository.getEnrollmentsByCourseID.mockResolvedValueOnce(cachedEnrollments);
 
-    mockRedisRepository.getCourses.mockResolvedValueOnce(cachedCourses);
+    const enrollments = await repository.getEnrollmentsByCourseID(1);
 
-    const courses = await repository.getCourses();
-
-    expect(courses).toHaveLength(2);
-    expect(courses[0]).toBeInstanceOf(Course);
-    expect(courses[0].name).toBe("Course 1");
-    expect(mockRedisRepository.getCourses).toHaveBeenCalledTimes(1);
-    expect(mockHttpRepository.getCourses).not.toHaveBeenCalled(); // HTTP call should not be made
+    expect(enrollments).toHaveLength(2);
+    expect(enrollments[0].percent_complete).toBe(50);
+    expect(enrollments[0].isCompleted()).toBe(false)
+    expect(mockRedisRepository.getEnrollmentsByCourseID).toHaveBeenCalledTimes(1);
+    expect(mockHttpRepository.getEnrollmentsByCourseID).not.toHaveBeenCalled();
   });
 
-  test("should fetch courses from HTTP if no cached courses are found", async () => {
-    mockRedisRepository.getCourses.mockResolvedValueOnce([]);
+  test("should fetch enrollments from HTTP if no cached enrollments are found", async () => {
+    mockRedisRepository.getEnrollmentsByCourseID.mockResolvedValueOnce([]);
+    const httpEnrollments = [new Enrollment(1, "2024-01-01", null, 50, "2024-12-31"), new Enrollment( 2,  "2024-01-01",  null,  30,  "2024-12-31")];
+    mockHttpRepository.getEnrollmentsByCourseID.mockResolvedValueOnce(httpEnrollments);
 
-    const mockResponse = [new Course(1, null, "Course 1", "Look", true, "https://cdn.filestackcontent.com/HfhcrIRZKEyvND8blEXA"), new Course(2, null, "Course 2", "To", false, "https://cdn.filestackcontent.com/HfhcrIRZKEyvND8blEXA")];
-    mockHttpRepository.getCourses.mockResolvedValueOnce(mockResponse);
+    const enrollments = await repository.getEnrollmentsByCourseID(1);
 
-    const courses = await repository.getCourses();
+    expect(enrollments).toHaveLength(2);
+    expect(enrollments[0].percent_complete).toBe(50);
+    expect(enrollments[0].isCompleted()).toBe(false)
+    expect(mockRedisRepository.getEnrollmentsByCourseID).toHaveBeenCalledTimes(1);
+    expect(mockHttpRepository.getEnrollmentsByCourseID).toHaveBeenCalledTimes(1);
+    expect(mockRedisRepository.saveEnrollmentsByCourseID).toHaveBeenCalledTimes(1);
+  });
 
-    expect(courses).toHaveLength(2);
-    expect(courses[0]).toBeInstanceOf(Course);
-    expect(courses[0].name).toBe("Course 1");
-    expect(mockHttpRepository.getCourses).toHaveBeenCalledTimes(1);
-    expect(mockRedisRepository.getCourses).toHaveBeenCalledTimes(1); // Ensure caching was attempted
+  test("should handle errors when fetching cached enrollments and continue with HTTP fetch", async () => {
+    mockRedisRepository.getEnrollmentsByCourseID.mockRejectedValueOnce(new Error("Cache failure"));
+    const httpEnrollments = [new Enrollment(1, "2024-01-01", null, 50, "2024-12-31"), new Enrollment( 2,  "2024-01-01",  null,  30,  "2024-12-31")];
+    mockHttpRepository.getEnrollmentsByCourseID.mockResolvedValueOnce(httpEnrollments);
+
+    const enrollments = await repository.getEnrollmentsByCourseID(1);
+
+    expect(enrollments).toHaveLength(2);
+    expect(enrollments[0].percent_complete).toBe(50);
+    expect(logger.error).toHaveBeenCalledWith("Failed to get cached enrollments: Error: Cache failure");
+    expect(mockHttpRepository.getEnrollmentsByCourseID).toHaveBeenCalledTimes(1);
+    expect(mockRedisRepository.saveEnrollmentsByCourseID).toHaveBeenCalledTimes(1);
+  });
+
+  test("should log errors when caching enrollments fails", async () => {
+    mockRedisRepository.getEnrollmentsByCourseID.mockResolvedValueOnce([]);
+    mockRedisRepository.saveEnrollmentsByCourseID.mockRejectedValueOnce(new Error("Cache save failure"));
+    const httpEnrollments = [new Enrollment(1, "2024-01-01", null, 50, "2024-12-31"), new Enrollment( 2,  "2024-01-01",  null,  30,  "2024-12-31")];
+    mockHttpRepository.getEnrollmentsByCourseID.mockResolvedValueOnce(httpEnrollments);
+
+    const enrollments = await repository.getEnrollmentsByCourseID(1);
+
+    expect(enrollments).toHaveLength(2);
+    expect(logger.error).toHaveBeenCalledWith("Failed to cache enrollments: Error: Cache save failure");
+  });
+
+  test("should throw NotFoundError if API returns 404", async () => {
+    mockRedisRepository.getEnrollmentsByCourseID.mockResolvedValueOnce([]);
+    mockHttpRepository.getEnrollmentsByCourseID.mockResolvedValueOnce(Promise.reject(new NotFoundError()));
+
+    await expect(repository.getEnrollmentsByCourseID(1)).rejects.toThrow(NotFoundError);
+    expect(mockRedisRepository.getEnrollmentsByCourseID).toHaveBeenCalledTimes(1);
+    expect(mockHttpRepository.getEnrollmentsByCourseID).toHaveBeenCalledTimes(1);
   });
 
   test("should throw InternalServerError for other non-2xx statuses", async () => {
-    mockRedisRepository.getCourses.mockResolvedValueOnce([]);
-    mockHttpRepository.getCourses.mockResolvedValueOnce(Promise.reject(new InternalServerError()));
+    mockRedisRepository.getEnrollmentsByCourseID.mockResolvedValueOnce([]);
+    mockHttpRepository.getEnrollmentsByCourseID.mockResolvedValueOnce(Promise.reject(new InternalServerError()));
 
-    await expect(repository.getCourses()).rejects.toThrow(InternalServerError);
-    expect(mockRedisRepository.getCourses).toHaveBeenCalledTimes(1);
-    expect(mockHttpRepository.getCourses).toHaveBeenCalledTimes(1);
-  });
-
-  test("should handle errors when getting cached courses and still fetch from HTTP", async () => {
-    mockRedisRepository.getCourses.mockRejectedValueOnce(new Error("Cache failure"));
-
-    const mockResponse = [new Course(1, null, "Course 1", "Look", true, "https://cdn.filestackcontent.com/HfhcrIRZKEyvND8blEXA")];
-    mockHttpRepository.getCourses.mockResolvedValueOnce(mockResponse);
-
-    const courses = await repository.getCourses();
-
-    expect(courses).toHaveLength(1);
-    expect(courses[0].name).toBe("Course 1");
-    expect(logger.error).toHaveBeenCalledWith("Failed to get cached courses: Error: Cache failure");
-    expect(mockHttpRepository.getCourses).toHaveBeenCalledTimes(1);
-    expect(mockRedisRepository.getCourses).toHaveBeenCalledTimes(1);
-    expect(mockRedisRepository.saveCourses).toHaveBeenCalledTimes(1);
-  });
-
-  test("should handle errors when saving courses to cache", async () => {
-    mockRedisRepository.saveCourses.mockRejectedValueOnce(new Error("Cache saving failure"));
-
-    mockRedisRepository.getCourses.mockResolvedValueOnce([]);
-    mockHttpRepository.getCourses.mockResolvedValueOnce([new Course(1, null, "Course 1", "Look", true, "https://cdn.filestackcontent.com/HfhcrIRZKEyvND8blEXA")]);
-
-    const courses = await repository.getCourses();
-
-    expect(courses).toHaveLength(1);
-    expect(logger.error).toHaveBeenCalledWith("Failed to cache courses: Error: Cache saving failure");
+    await expect(repository.getEnrollmentsByCourseID(1)).rejects.toThrow(InternalServerError);
+    expect(mockRedisRepository.getEnrollmentsByCourseID).toHaveBeenCalledTimes(1);
+    expect(mockHttpRepository.getEnrollmentsByCourseID).toHaveBeenCalledTimes(1);
   });
 });

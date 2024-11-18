@@ -17,7 +17,6 @@ describe("HTTPEnrollmentsRepository", () => {
   });
 
   test("should fetch all enrollments successfully", async () => {
-    // Mock responses for pagination
     const mockResponsePage1 = {
       enrollments: [
         { user_id: 1, enrolled_at: "2024-01-01", completed_at: null, percent_complete: 50, expires_at: "2024-12-31" },
@@ -34,7 +33,6 @@ describe("HTTPEnrollmentsRepository", () => {
       meta: { number_of_pages: 2, page: 2, total: 4, per_page: 2, from: 3, to: 4 },
     };
 
-    // Mock fetch to return responses
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: jest.fn().mockResolvedValue(mockResponsePage1),

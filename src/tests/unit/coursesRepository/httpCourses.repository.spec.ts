@@ -17,7 +17,6 @@ describe("HTTPCoursesRepository", () => {
   });
 
   test("should fetch all courses successfully", async () => {
-    // Mock responses for pagination
     const mockResponsePage1 = {
       courses: [
         { id: 1, description: null, name: "Course 1", heading: "Look", is_published: true, image_url: "https://cdn.filestackcontent.com/HfhcrIRZKEyvND8blEXA" },
@@ -29,12 +28,11 @@ describe("HTTPCoursesRepository", () => {
     const mockResponsePage2 = {
       courses: [
         { id: 3, description: null, name: "Course 3", heading: "The", is_published: true, image_url: "https://cdn.filestackcontent.com/HfhcrIRZKEyvND8blEXA" },
-        { id: 4, description: null, name: "Course 4", heading: "Skies", is_published: true, image_url: "https://cdn.filestackcontent.com/HfhcrIRZKEyvND8blEXA" }
+        { id: 4, description: null, name: "Course 4", heading: "Skies", is_published: true, image_url: "https://cdn.filestackcontent.com/HfhcrIRZKEyvND8blEXA" },
       ],
       meta: { number_of_pages: 2, page: 2, total: 4, per_page: 2, from: 3, to: 4 },
     };
 
-    // Mock fetch to return responses
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: jest.fn().mockResolvedValue(mockResponsePage1),

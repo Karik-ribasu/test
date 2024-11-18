@@ -2,6 +2,7 @@ import type { ICoursesRepository } from "../ICoursesRepository";
 import Course from "../course.entity";
 import { InternalServerError } from "../../../infra/errors/errorType.infra";
 import { ErrorHandler } from "../../../infra/errors/errorHandler.infra";
+import config from "../../../infra/config/config.infra";
 
 type CourseDTO = {
   id: number;
@@ -51,13 +52,13 @@ export class HTTPCoursesRepository implements ICoursesRepository {
   }
 
   private async fetchCoursesPage(page: number): Promise<HTTPGetCoursesResponse> {
-    const url = `${process.env.TEACHABLE_API_BASE_URL}/v1/courses?page=${page}`;
+    const url = `${config.TEACHABLE_API.BASE_URL}/v1/courses?page=${page}`;
     const response = await fetch(url, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
-        apiKey: process.env.TEACHABLE_API_KEY as string,
+        apiKey: config.TEACHABLE_API.KEY as string,
       },
     });
 

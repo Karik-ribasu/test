@@ -2,6 +2,7 @@ import type { IUsersRepository } from "../IUsersRepository";
 import { ErrorHandler } from "../../../infra/errors/errorHandler.infra";
 import { InternalServerError, NotFoundError } from "../../../infra/errors/errorType.infra";
 import User from "../user.entity";
+import config from "../../../infra/config/config.infra";
 
 type UserDTO = {
   email: string;
@@ -49,13 +50,13 @@ export class HTTPUsersRepository implements IUsersRepository {
   }
 
   private async fetchUserPage(page: number): Promise<HTTPGetUsersResponse> {
-    const url = `${process.env.TEACHABLE_API_BASE_URL}/v1/users?page=${page}`;
+    const url = `${config.TEACHABLE_API.BASE_URL}/v1/users?page=${page}`;
     const response = await fetch(url, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
         Accept: "application/json",
-        apiKey: process.env.TEACHABLE_API_KEY as string,
+        apiKey: config.TEACHABLE_API.KEY as string,
       },
     });
 

@@ -1,11 +1,23 @@
 import { createClient, type RedisClientType } from "redis";
+import config from "../config/config.infra";
+
 
 class RedisCache {
   private static instance: RedisCache;
   private readonly client: RedisClientType;
 
   private constructor() {
-    this.client = createClient();
+    this.client = createClient({
+      password: config.REDIS.KEY,
+      socket: {
+        host: config.REDIS.HOST,
+        port: Number(config.REDIS.PORT),
+      },
+    });
+
+    this.client.on("error", (err) => {
+      console.error("Redis Client Connection Error", err);
+    });
   }
 
   public static getInstance(): RedisCache {

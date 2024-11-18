@@ -12,10 +12,9 @@ import { HTTPUsersRepository } from "../../domain/user/repository/httpUsers.repo
 import { RedisUsersRepository } from "../../domain/user/repository/redisUsers.repository";
 import { UsersRepository } from "../../domain/user/repository/users.repository";
 
-// Redis cache instance
+
 const redisCache = RedisCache.getInstance();
 
-// Repositories
 const httpCoursesRepository = new HTTPCoursesRepository();
 const redisCoursesRepository = new RedisCoursesRepository(redisCache);
 const coursesRepository = new CoursesRepository(httpCoursesRepository, redisCoursesRepository);
@@ -28,13 +27,10 @@ const httpUsersRepository = new HTTPUsersRepository();
 const redisUsersRepository = new RedisUsersRepository(redisCache);
 const usersRepository = new UsersRepository(httpUsersRepository, redisUsersRepository);
 
-// Services
 const getPublishedCoursesService = new GetPublishedCoursesService(coursesRepository, usersRepository, enrollmentsRepository);
 
-// Controllers
 const getPublishedCoursesController = new GetPublishedCoursesController(getPublishedCoursesService);
 
-// Router
 const coursesRouter = Router();
 coursesRouter.get("/v1/courses", getPublishedCoursesController.execute);
 

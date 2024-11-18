@@ -13,7 +13,6 @@ describe("CoursesRepository", () => {
   let mockRedisRepository: jest.Mocked<RedisCoursesRepository>;
 
   beforeEach(() => {
-    // Mock dependencies
     mockHttpRepository = {
       getCourses: jest.fn(),
       fetchAllUsers: jest.fn(),
@@ -46,7 +45,7 @@ describe("CoursesRepository", () => {
     expect(courses[0]).toBeInstanceOf(Course);
     expect(courses[0].name).toBe("Course 1");
     expect(mockRedisRepository.getCourses).toHaveBeenCalledTimes(1);
-    expect(mockHttpRepository.getCourses).not.toHaveBeenCalled(); // HTTP call should not be made
+    expect(mockHttpRepository.getCourses).not.toHaveBeenCalled();
   });
 
   test("should fetch courses from HTTP if no cached courses are found", async () => {
@@ -61,7 +60,7 @@ describe("CoursesRepository", () => {
     expect(courses[0]).toBeInstanceOf(Course);
     expect(courses[0].name).toBe("Course 1");
     expect(mockHttpRepository.getCourses).toHaveBeenCalledTimes(1);
-    expect(mockRedisRepository.getCourses).toHaveBeenCalledTimes(1); // Ensure caching was attempted
+    expect(mockRedisRepository.getCourses).toHaveBeenCalledTimes(1);
   });
 
   test("should throw InternalServerError for other non-2xx statuses", async () => {
