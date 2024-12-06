@@ -16,6 +16,7 @@ const limiter = rateLimit({
 app.use(logger.middleware);
 app.use(express.json());
 app.use(helmet())
+app.use(limiter)
 app.disable('x-powered-by')
 app.use("/", coursesRouter);
 
